@@ -11,16 +11,16 @@
 
 namespace Igorw\Silex;
 
-use Silex\Application;
-use Silex\ServiceProviderInterface;
+use Pimple\Container;
+use Pimple\ServiceProviderInterface;
 
 class ConfigServiceProvider implements ServiceProviderInterface
 {
     private $filename;
-    private $replacements = array();
+    private $replacements = [];
     private $driver;
 
-    public function __construct($filename, array $replacements = array(), ConfigDriver $driver = null)
+    public function __construct($filename, array $replacements = [], ConfigDriver $driver = null)
     {
         $this->filename = $filename;
 
@@ -30,40 +30,38 @@ class ConfigServiceProvider implements ServiceProviderInterface
             }
         }
 
-        $this->driver = $driver ?: new ChainConfigDriver(array(
+        $this->driver = $driver ?: new ChainConfigDriver([
             new PhpConfigDriver(),
             new YamlConfigDriver(),
             new JsonConfigDriver(),
             new TomlConfigDriver(),
-        ));
+        ]);
     }
 
-    public function register(Application $app)
+    public function register(Container $pimple)
     {
         $config = $this->readConfig();
 
-        foreach ($config as $name => $value)
-            if ('%' === substr($name, 0, 1))
+        foreach ($config as $name => $value) {
+            if ('%' === substr($name, 0, 1)) {
                 $this->replacements[$name] = preg_replace_callback(
-                    '/(%.+%)/U', function($matches) use ($config) {
+                    '/(%.+%)/U', function ($matches) use ($config) {
                         return $this->replacements[$matches[0]];
                     },
                     (string) $value);
+            }
+        }
 
-        $this->merge($app, $config);
+        $this->merge($pimple, $config);
     }
 
-    public function boot(Application $app)
-    {
-    }
-
-    private function merge(Application $app, array $config)
+    private function merge(Container $pimple, array $config)
     {
         foreach ($config as $name => $value) {
-            if (isset($app[$name]) && is_array($value)) {
-                $app[$name] = $this->mergeRecursively($app[$name], $value);
+            if (isset($pimple[$name]) && is_array($value)) {
+                $pimple[$name] = $this->mergeRecursively($pimple[$name], $value);
             } else {
-                $app[$name] = $this->doReplacements($value);
+                $pimple[$name] = $this->doReplacements($value);
             }
         }
     }
