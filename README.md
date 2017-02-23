@@ -3,6 +3,21 @@
 A config ServiceProvider for [Silex](http://silex.sensiolabs.org) with support
 for php, json, yaml, and toml.
 
+## Installation
+
+Put these lines to your composer.json:
+
+    "require": {
+        "danaki/config-service-provider": "dev-master"
+    },
+    ...
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/danaki/ConfigServiceProvider"
+        }
+    ]  
+
 ## Usage
 
 ### Passing a config file
